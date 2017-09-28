@@ -26,6 +26,7 @@ import com.facebook.react.bridge.ReadableMap;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.net.URL;
 import java.util.Arrays;
 
 import static com.dieam.reactnativepushnotification.modules.RNPushNotification.LOG_TAG;
@@ -171,8 +172,6 @@ public class RNPushNotificationHelper {
 
             notification.setContentText(bundle.getString("message"));
 
-            String largeIcon = bundle.getString("largeIcon");
-
             String subText = bundle.getString("subText");
 
             if (subText != null) {
@@ -184,38 +183,36 @@ public class RNPushNotificationHelper {
                 notification.setNumber(Integer.parseInt(numberString));
             }
 
-            int smallIconResId;
-            int largeIconResId;
-
             String smallIcon = bundle.getString("smallIcon");
+            int smallIconResId;
 
             if (smallIcon != null) {
-                smallIconResId = res.getIdentifier(smallIcon, "mipmap", packageName);
+                smallIconResId = res.getIdentifier(smallIcon, "drawable", packageName);
             } else {
-                smallIconResId = res.getIdentifier("ic_notification", "mipmap", packageName);
+                smallIconResId = res.getIdentifier("ic_notification", "drawable", packageName);
             }
 
             if (smallIconResId == 0) {
                 smallIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
-
-                if (smallIconResId == 0) {
-                    smallIconResId = android.R.drawable.ic_dialog_info;
-                }
-            }
-
-            if (largeIcon != null) {
-                largeIconResId = res.getIdentifier(largeIcon, "mipmap", packageName);
-            } else {
-                largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
-            }
-
-            Bitmap largeIconBitmap = BitmapFactory.decodeResource(res, largeIconResId);
-
-            if (largeIconResId != 0 && (largeIcon != null || Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)) {
-                notification.setLargeIcon(largeIconBitmap);
             }
 
             notification.setSmallIcon(smallIconResId);
+
+            String image = bundle.getString("image");
+            Bitmap largeIconBitmap;
+
+            if (image != null) {
+                URL imageUrl = new URL(image);
+                largeIconBitmap = BitmapFactory.decodeStream(imageUrl.openStream());
+            } else {
+                int largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
+                largeIconBitmap = BitmapFactory.decodeResource(res, largeIconResId);
+            }
+
+            if (largeIconBitmap != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                notification.setLargeIcon(largeIconBitmap);
+            }
+
             String bigText = bundle.getString("bigText");
 
             if (bigText == null) {
