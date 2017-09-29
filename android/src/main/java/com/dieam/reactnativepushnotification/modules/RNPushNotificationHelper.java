@@ -129,17 +129,42 @@ public class RNPushNotificationHelper {
         }
     }
 
+    private String getLocalizedStringResource(String locKey, String lockArgs) {
+        if (locKey == null)
+            return null;
+
+        Resources res = context.getResources();
+        String packageName = context.getPackageName();
+
+        int resId = res.getIdentifier(locKey, "string", packageName);
+
+        if (resId == 0) {
+            return null;
+        }
+
+        if (lockArgs == null)
+            return res.getString(resId);
+
+        String result = null;
+        try {
+            JSONArray lockArgsJSON = new JSONArray(lockArgs);
+            String[] args = new String[lockArgsJSON.length()];
+            for (int i = 0; i < lockArgsJSON.length(); i++) {
+                args[i] = lockArgsJSON.getString(i);
+            }
+            result = String.format(res.getString(resId), (Object[]) args);
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, "Bad lock args format");
+        }
+
+        return result;
+    }
+
     public void sendToNotificationCentre(Bundle bundle) {
         try {
             Class intentClass = getMainActivityClass();
             if (intentClass == null) {
                 Log.e(LOG_TAG, "No activity class found for the notification");
-                return;
-            }
-
-            if (bundle.getString("message") == null) {
-                // this happens when a 'data' notification is received - we do not synthesize a local notification in this case
-                Log.d(LOG_TAG, "Cannot send to notification centre because there is no 'message' field in: " + bundle);
                 return;
             }
 
@@ -152,14 +177,17 @@ public class RNPushNotificationHelper {
             Resources res = context.getResources();
             String packageName = context.getPackageName();
 
-            String title = bundle.getString("title");
-            if (title == null) {
-                ApplicationInfo appInfo = context.getApplicationInfo();
-                title = context.getPackageManager().getApplicationLabel(appInfo).toString();
+            String title = getLocalizedStringResource(bundle.getString("title_loc_key"), bundle.getString("title_loc_args"));
+            String message = getLocalizedStringResource(bundle.getString("body_loc_key"), bundle.getString("body_loc_args"));
+
+            if (title == null || message == null) {
+                Log.e(LOG_TAG, "No localization available for title or message");
+                return;
             }
 
             NotificationCompat.Builder notification = new NotificationCompat.Builder(context)
                     .setContentTitle(title)
+                    .setContentText(message)
                     .setTicker(bundle.getString("ticker"))
                     .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -170,20 +198,12 @@ public class RNPushNotificationHelper {
                 notification.setGroup(group);
             }
 
-            notification.setContentText(bundle.getString("message"));
-
-            String subText = bundle.getString("subText");
-
-            if (subText != null) {
-                notification.setSubText(subText);
-            }
-
             String numberString = bundle.getString("number");
             if (numberString != null) {
                 notification.setNumber(Integer.parseInt(numberString));
             }
 
-            String smallIcon = bundle.getString("smallIcon");
+            String smallIcon = bundle.getString("icon");
             int smallIconResId;
 
             if (smallIcon != null) {
@@ -218,7 +238,6 @@ public class RNPushNotificationHelper {
             if (bigText == null) {
                 bigText = bundle.getString("message");
             }
-
             notification.setStyle(new NotificationCompat.BigTextStyle().bigText(bigText));
 
             Intent intent = new Intent(context, intentClass);
