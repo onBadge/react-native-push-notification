@@ -40,9 +40,12 @@ public class RNPushNotificationListenerService extends GcmListenerService {
             if (!bundle.containsKey("color")) {
                 bundle.putString("color", data.optString("color", null));
             }
+        }
 
-            final int badge = data.optInt("badge", -1);
-            if (badge >= 0) {
+        String badgeNumberString = bundle.getString("badge");
+        if (badgeNumberString != null) {
+            final int badge = Integer.parseInt(badgeNumberString);
+            if (badge > 0) {
                 ApplicationBadgeHelper.INSTANCE.setApplicationIconBadgeNumber(this, badge);
             }
         }
