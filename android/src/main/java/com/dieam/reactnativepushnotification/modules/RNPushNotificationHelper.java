@@ -20,6 +20,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.dieam.reactnativepushnotification.helpers.ImageDownloadTask;
@@ -132,6 +133,13 @@ public class RNPushNotificationHelper {
         }
     }
 
+    private int getDefaultNotificationColor() {
+        Resources res = context.getResources();
+        String packageName = context.getPackageName();
+        int resId = res.getIdentifier("notification_color", "color", packageName);
+        return ContextCompat.getColor(context, resId);
+    }
+
     private String getLocalizedStringResource(String locKey, String lockArgs) {
         if (locKey == null)
             return null;
@@ -228,9 +236,16 @@ public class RNPushNotificationHelper {
             notification.setCategory(NotificationCompat.CATEGORY_CALL);
 
             String color = bundle.getString("color");
+
+            int notificationColor;
+
             if (color != null) {
-                notification.setColor(Color.parseColor(color));
+                notificationColor = Color.parseColor(color);
+            } else {
+                notificationColor = getDefaultNotificationColor();
             }
+
+            notification.setColor(notificationColor);
         }
 
         // optional
